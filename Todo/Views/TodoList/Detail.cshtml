@@ -4,6 +4,8 @@
 @using Todo.Models.TodoLists
 @model Todo.Models.TodoLists.TodoListDetailViewmodel
 
+@inject IGravatar GravatarService
+
 @{
     ViewData["Title"] = $"List: {Model.Title}";
 }
@@ -42,7 +44,8 @@
             if (Model.Order == Order.Importance)
             {
                 items = items.OrderBy(item => item.Importance).ToList();
-            } else
+            }
+            else
             {
                 items = items.OrderByDescending(item => item.Rank).ToList();
             }
@@ -88,7 +91,12 @@
 
                         <div class="col-md-4 text-right">
                             <small>
-                                @item.ResponsibleParty.UserName
+
+                                @{ 
+                                    var gravatarResult = await GravatarService.GetUserDetailsAsync(item.ResponsibleParty.Email);
+                                }
+
+                                @gravatarResult
 
                                 <img src="https://www.gravatar.com/avatar/@Gravatar.GetHash(item.ResponsibleParty.Email)?s=30" />
 
@@ -104,7 +112,7 @@
 
 @section Scripts {
     <script type="text/javascript">
-        $('#hideDoneCheckbox').change(function () {       
+        $('#hideDoneCheckbox').change(function () {
             const $checkbox = $('#hideDoneCheckbox');
             if ($checkbox.is(":checked")) {
                 $('.item-done').hide();
@@ -120,7 +128,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             const todoListId = urlParams.get('todoListId');
             const url = window.location.origin + window.location.pathname + "?todoListId=" + todoListId + "&order=" + $orderDropdown.val();
-            window.location.href =url;
+            window.location.href = url;
         });
     </script>
 }
