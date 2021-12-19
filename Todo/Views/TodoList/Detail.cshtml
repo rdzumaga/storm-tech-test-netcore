@@ -222,7 +222,8 @@
                     $('#itemList').append(response);
                 },
                 error: function (err) {
-
+                    // todo show some error message for user
+                    clearFields();
                 }
             });
         });
