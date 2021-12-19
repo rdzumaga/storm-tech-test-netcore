@@ -1,6 +1,7 @@
 ﻿@using Todo.Controllers
 @using Todo.Data.Entities
 @using Todo.Services
+@using Todo.Models.TodoLists
 @model Todo.Models.TodoLists.TodoListDetailViewmodel
 
 @{
@@ -14,6 +15,18 @@
     <ul class="list-group">
 
         <li class="list-group-item">
+            <div class="form-group">
+                <label asp-for="Order"></label>
+                @Html.DropDownListFor(
+                    m => m.Order,
+                    SelectListConvenience.OrderSelectListItems,
+                    new { @class = "form-control" }
+                    )
+                <span asp-validation-for="Order" class="text-danger"></span>
+            </div>
+        </li>
+
+        <li class="list-group-item">
             <a asp-action="Create" asp-controller="TodoItem" asp-route-todoListId="@Model.TodoListId">
                 <strong>Add New Item</strong>
             </a>
@@ -24,69 +37,90 @@
             </span>
         </li>
 
-        @foreach (var item in Model.Items.OrderBy(item => item.Importance))
-        {
-            string contextualClass;
-            switch (item.Importance)
+        @{
+            var items = Model.Items;
+            if (Model.Order == Order.Importance)
             {
-                case Importance.High:
-                    contextualClass = "list-group-item-danger";
-                    break;
-                case Importance.Low:
-                    contextualClass = "list-group-item-info";
-                    break;
-                default:
-                    contextualClass = "";
-                    break;
+                items = items.OrderBy(item => item.Importance).ToList();
+            } else
+            {
+                items = items.OrderByDescending(item => item.Rank).ToList();
             }
 
-            if (item.IsDone)
+            foreach (var item in items)
             {
-                contextualClass += " item-done";
+                string contextualClass;
+                switch (item.Importance)
+                {
+                    case Importance.High:
+                        contextualClass = "list-group-item-danger";
+                        break;
+                    case Importance.Low:
+                        contextualClass = "list-group-item-info";
+                        break;
+                    default:
+                        contextualClass = "";
+                        break;
+                }
+
+                if (item.IsDone)
+                {
+                    contextualClass += " item-done";
+                }
+
+                <li class="list-group-item @contextualClass">
+
+                    <div class="row">
+
+                        <div class="col-md-8">
+                            <a asp-action="Edit" asp-controller="TodoItem" asp-route-todoItemId="@item.TodoItemId">
+
+                                @if (item.IsDone)
+                                {
+                                    <s>@item.Title</s>
+                                }
+                                else
+                                {
+                                    <text>@item.Title</text>
+                                }
+                            </a>
+                        </div>
+
+                        <div class="col-md-4 text-right">
+                            <small>
+                                @item.ResponsibleParty.UserName
+
+                                <img src="https://www.gravatar.com/avatar/@Gravatar.GetHash(item.ResponsibleParty.Email)?s=30" />
+
+                            </small>
+                        </div>
+                    </div>
+
+                </li>
             }
-
-            <li class="list-group-item @contextualClass">
-
-                <div class="row">
-
-                    <div class="col-md-8">
-                        <a asp-action="Edit" asp-controller="TodoItem" asp-route-todoItemId="@item.TodoItemId">
-
-                            @if (item.IsDone)
-                            {
-                                <s>@item.Title</s>
-                            }
-                            else
-                            {
-                                <text>@item.Title</text>
-                            }
-                        </a>
-                    </div>
-
-                    <div class="col-md-4 text-right">
-                        <small>
-                            @item.ResponsibleParty.UserName
-
-                            <img src="https://www.gravatar.com/avatar/@Gravatar.GetHash(item.ResponsibleParty.Email)?s=30" />
-
-                        </small>
-                    </div>
-                </div>
-
-            </li>
         }
     </ul>
 </div>
 
 @section Scripts {
     <script type="text/javascript">
-        $('#hideDoneCheckbox').change(function () {
+        $('#hideDoneCheckbox').change(function () {       
             const $checkbox = $('#hideDoneCheckbox');
             if ($checkbox.is(":checked")) {
                 $('.item-done').hide();
             } else {
                 $('.item-done').show();
             }
+        });
+    </script>
+
+    <script type="text/javascript">
+        const $orderDropdown = $('select#Order');
+        $orderDropdown.change(function () {
+            const urlParams = new URLSearchParams(window.location.search);
+            const todoListId = urlParams.get('todoListId');
+            const url = window.location.origin + window.location.pathname + "?todoListId=" + todoListId + "&order=" + $orderDropdown.val();
+            window.location.href =url;
         });
     </script>
 }
