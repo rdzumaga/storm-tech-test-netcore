@@ -2,8 +2,11 @@
 @using Todo.Data.Entities
 @using Todo.Services
 @using Todo.Models.TodoLists
+@using Todo.Data
+@using Todo.Views.TodoItem
 @model Todo.Models.TodoLists.TodoListDetailViewmodel
 
+@inject ApplicationDbContext dbContext
 @inject IGravatar GravatarService
 
 @{
@@ -14,14 +17,14 @@
 
 <div class="col-md-6">
 
-    <ul class="list-group">
+    <ul id="itemList" class="list-group">
 
         <li class="list-group-item">
             <div class="form-group">
                 <label asp-for="Order"></label>
                 @Html.DropDownListFor(
                     m => m.Order,
-                    SelectListConvenience.OrderSelectListItems,
+                    Todo.Models.TodoLists.SelectListConvenience.OrderSelectListItems,
                     new { @class = "form-control" }
                     )
                 <span asp-validation-for="Order" class="text-danger"></span>
@@ -29,7 +32,12 @@
         </li>
 
         <li class="list-group-item">
-            <a asp-action="Create" asp-controller="TodoItem" asp-route-todoListId="@Model.TodoListId">
+            @*<a asp-action="Create" asp-controller="TodoItem" asp-route-todoListId="@Model.TodoListId">
+            <strong>Add New Item</strong>
+        </a>*@
+
+            @Html.AntiForgeryToken()
+            <a href="#" id="addNewItem">
                 <strong>Add New Item</strong>
             </a>
 
@@ -37,6 +45,38 @@
                 <span>Hide done items</span>
                 <input type="checkbox" name="hideDoneCheckbox" id="hideDoneCheckbox" />
             </span>
+        </li>
+
+        <li class="list-group-item hidden" id="newItemSection">
+            <div class="form">
+                <div class="form-group">
+                    <label for="newTitle"></label>
+                    <input id="newTitle" class="form-control" placeholder="Type in new title" />
+                </div>
+
+                <div class="form-group">
+                    <label for="newImportance"></label>
+                    @Html.DropDownList("newImportance", Todo.Views.TodoItem.SelectListConvenience.ImportanceSelectListItems, "Select importance",
+                        new { @class = "form-control" }
+                        )
+                </div>
+
+                <div class="form-group">
+                    <label for="newResponsiblepartyId"></label>
+                    @Html.DropDownList(
+                        "newResponsiblePartyId",
+                        dbContext.UserSelectListItems(), "Select responsible user",
+                             new { @class = "form-control" }
+                        )
+                </div>
+
+                <button id="newItemSave" class="btn btn-default" type="button">
+                    Save
+                </button>
+                <button id="newItemCancel" class="btn btn-warning" type="button">
+                    Cancel
+                </button>
+            </div>
         </li>
 
         @{
@@ -92,7 +132,7 @@
                         <div class="col-md-4 text-right">
                             <small>
 
-                                @{ 
+                                @{
                                     var gravatarResult = await GravatarService.GetUserDetailsAsync(item.ResponsibleParty.Email);
                                 }
 
@@ -130,5 +170,68 @@
             const url = window.location.origin + window.location.pathname + "?todoListId=" + todoListId + "&order=" + $orderDropdown.val();
             window.location.href = url;
         });
+    </script>
+
+    <script type="text/javascript">
+
+        function clearFields() {
+            $('#newTitle').val('');
+            $('#newResponsiblePartyId').val(undefined);
+            $('#newImportance').val('');
+        }
+
+        function mapImportance(importance) {
+            switch (importance) {
+                case "High":
+                    return 0;
+                case "Medium":
+                    return 1;
+                case "Low":
+                    return 2;
+            }
+        }
+
+        $("#addNewItem").click(function () {
+            $('#newItemSection').removeClass('hidden');
+        });
+
+        $("#newItemSave").click(function () {
+
+            const url = window.location.origin + "/TodoItem/CreateAjax";
+            const urlParams = new URLSearchParams(window.location.search);
+            const todoListId = urlParams.get('todoListId');
+
+            const request = {
+                "Title": $('#newTitle').val(),
+                "TodoListId": todoListId,
+                "ResponsiblePartyId": $('#newResponsiblePartyId').val(),
+                "Importance": mapImportance($('#newImportance').val())
+            };
+
+            $.ajax({
+                url: url,
+                method: "POST",
+                data: JSON.stringify(request),
+                contentType: "application/json; charset=utf-8",
+                headers: {
+                    "RequestVerificationToken": $('input[name = __RequestVerificationToken]').val()
+                },
+                success: function (response) {
+                    $('#newItemSection').addClass('hidden');
+                    clearFields();
+                    $('#itemList').append(response);
+                },
+                error: function (err) {
+
+                }
+            });
+        });
+
+        $("#newItemCancel").click(function () {
+            clearFields();
+            $('#newItemSection').addClass('hidden');
+        });
+
+
     </script>
 }

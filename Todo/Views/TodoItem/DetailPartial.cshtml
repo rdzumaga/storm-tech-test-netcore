@@ -1,0 +1,62 @@
+﻿@using Todo.Services
+@using Todo.Data.Entities
+
+@model Todo.Models.TodoItems.TodoItemSummaryViewmodel
+
+@inject IGravatar GravatarService
+
+@{
+    string contextualClass;
+    switch (Model.Importance)
+    {
+        case Importance.High:
+            contextualClass = "list-group-item-danger";
+            break;
+        case Importance.Low:
+            contextualClass = "list-group-item-info";
+            break;
+        default:
+            contextualClass = "";
+            break;
+    }
+
+    if (Model.IsDone)
+    {
+        contextualClass += " item-done";
+    }
+
+}
+<li class="list-group-item  @contextualClass">
+
+    <div class="row">
+
+        <div class="col-md-8">
+            <a asp-action="Edit" asp-controller="TodoItem" asp-route-todoItemId="@Model.TodoItemId">
+
+                @if (Model.IsDone)
+                {
+                    <s>@Model.Title</s>
+                }
+                else
+                {
+                    <text>@Model.Title</text>
+                }
+            </a>
+        </div>
+
+        <div class="col-md-4 text-right">
+            <small>
+
+                @{
+                    var gravatarResult = await GravatarService.GetUserDetailsAsync(Model.ResponsibleParty.Email);
+                }
+
+                @gravatarResult
+
+                <img src="https://www.gravatar.com/avatar/@Gravatar.GetHash(Model.ResponsibleParty.Email)?s=30" />
+
+            </small>
+        </div>
+    </div>
+
+</li>
